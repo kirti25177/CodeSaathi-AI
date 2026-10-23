@@ -1,0 +1,262 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Inter', sans-serif;
+  color: #f5f2e8;
+  background: #071a16;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button, select {
+  font: inherit;
+}
+
+.app {
+  max-width: 1440px;
+  margin: auto;
+  padding: 28px 5%;
+}
+
+.topbar, .brand, .panel-header, .actions, .status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  justify-content: flex-start;
+}
+
+.brand-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #426d59;
+  border-radius: 14px;
+  color: #dfff72;
+  font-weight: 800;
+  font-size: 20px;
+}
+
+h1, h2, p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 21px;
+  margin-bottom: 4px;
+}
+
+h1 span, .welcome h2 span {
+  color: #dfff72;
+}
+
+.brand p, .welcome > p:last-child {
+  color: #9db2a7;
+  margin-bottom: 0;
+  font-size: 13px;
+}
+
+.status {
+  justify-content: flex-start;
+  color: #b7c9be;
+  font-size: 12px;
+  border: 1px solid #254338;
+  border-radius: 24px;
+  padding: 10px 14px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: #dfff72;
+  border-radius: 50%;
+}
+
+.welcome {
+  padding: 60px 0 32px;
+}
+
+.eyebrow {
+  color: #dfff72;
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.welcome h2 {
+  font-size: clamp(27px, 4vw, 43px);
+  letter-spacing: -1.5px;
+  margin-bottom: 12px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 20px;
+}
+
+.editor-panel, .result-panel {
+  min-width: 0;
+  overflow: hidden;
+  background: #0d2520;
+  border: 1px solid #254338;
+  border-radius: 16px;
+}
+
+.panel-header {
+  min-height: 65px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #254338;
+}
+
+.panel-header strong {
+  font-size: 14px;
+}
+
+select {
+  background: #142f27;
+  color: #f5f2e8;
+  border: 1px solid #426d59;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding: 16px;
+  gap: 9px;
+}
+
+.actions button {
+  background: #dfff72;
+  color: #071a16;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.actions button:hover {
+  background: #c9ed5e;
+  transform: translateY(-1px);
+}
+
+.ai-label {
+  font-size: 10px;
+  color: #dfff72;
+  letter-spacing: 1px;
+}
+
+.result-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-height: 250px;
+  padding: 20px;
+  margin: 0;
+  color: #d6e4da;
+  font: 13px/1.9 'Inter', sans-serif;
+}
+
+.next-hint {
+  margin: 12px 16px 18px;
+  padding: 16px;
+  background: #142f27;
+  border-radius: 10px;
+  border-left: 3px solid #dfff72;
+}
+
+.next-hint strong {
+  font-size: 12px;
+  color: #dfff72;
+}
+
+.next-hint p {
+  color: #9db2a7;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 8px 0 0;
+}
+
+footer {
+  padding: 28px 0;
+  text-align: center;
+  color: #789487;
+  font-size: 11px;
+}
+
+@media (max-width: 850px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome {
+    padding-top: 40px;
+  }
+
+  .status {
+    display: none;
+  }
+}
+
+.markdown-content {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+
+.markdown-content p {
+  margin: 0 0 14px;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  margin: 18px 0 10px;
+  color: #dfff72;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 24px;
+  margin: 8px 0 16px;
+}
+
+.markdown-content pre {
+  white-space: pre-wrap;
+  overflow-x: auto;
+  padding: 14px;
+  border-radius: 8px;
+  background: #071a16;
+}
+
+.markdown-content code {
+  font-family: Consolas, monospace;
+}
+
+.markdown-content :not(pre) > code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #18332b;
+}
+
+.markdown-content pre code {
+  background: transparent;
+}
