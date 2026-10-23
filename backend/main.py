@@ -25,6 +25,8 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5174",
+        "https://code-saathi-ai.vercel.app",
+        "https://code-saathi-ai-4qjz.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
