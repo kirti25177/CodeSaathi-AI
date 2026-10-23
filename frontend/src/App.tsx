@@ -1,4 +1,3 @@
-
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useState } from "react";
@@ -10,6 +9,8 @@ type AnalysisResponse = {
   detail?: unknown;
   message?: string;
 };
+
+const BACKEND_URL = "https://codesaathi-ai-n6c2.onrender.com";
 
 function App() {
   const [language, setLanguage] = useState("cpp");
@@ -30,19 +31,10 @@ function App() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Convert backend errors into readable messages
   function readableError(value: unknown): string {
-    if (typeof value === "string") {
-      return value;
-    }
-
-    if (value instanceof Error) {
-      return value.message;
-    }
-
-    if (value === null || value === undefined) {
-      return "Unknown error occurred.";
-    }
+    if (typeof value === "string") return value;
+    if (value instanceof Error) return value.message;
+    if (value == null) return "Unknown error occurred.";
 
     try {
       return JSON.stringify(value, null, 2);
@@ -51,7 +43,6 @@ function App() {
     }
   }
 
-  // Common function used by all three AI features
   async function requestAnalysis(
     endpoint: string,
     loadingMessage: string,
@@ -66,41 +57,33 @@ function App() {
     setResult(loadingMessage);
 
     try {
-      const response = await fetch(
-  `https://codesaathi-ai-n6c2.onrender.com${endpoint}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ code, language }),
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code, language }),
+      });
 
-      // Read the response safely, even if the backend sends invalid JSON
       const responseText = await response.text();
-
       let data: AnalysisResponse = {};
 
       if (responseText.trim()) {
         try {
           data = JSON.parse(responseText) as AnalysisResponse;
         } catch {
-          if (!response.ok) {
-            throw new Error(
-              `Backend returned an unexpected response (${response.status}): ${responseText}`
-            );
-          }
-
-          throw new Error("Backend returned an invalid JSON response.");
+          throw new Error(
+            `Unexpected backend response (${response.status}): ${responseText}`
+          );
         }
       }
 
       if (!response.ok) {
-        const detail =
-          data.detail ?? data.message ?? data.explanation ?? errorMessage;
-
-        throw new Error(readableError(detail));
+        throw new Error(
+          readableError(
+            data.detail ?? data.message ?? data.explanation ?? errorMessage
+          )
+        );
       }
 
       if (
@@ -108,19 +91,18 @@ function App() {
         !data.explanation.trim()
       ) {
         throw new Error(
-          "The AI did not return an explanation. Check the backend response."
+          "The backend responded, but no explanation was returned."
         );
       }
 
       setResult(data.explanation);
     } catch (error) {
-      console.error(`${endpoint} Error:`, error);
+      console.error(`${endpoint} error:`, error);
 
       if (error instanceof TypeError) {
         setResult(
-          "Could not connect to the backend.\n\n" +
-            "Please check that FastAPI is running at http://127.0.0.1:8000 " +
-            "and that the browser is not blocking the request."
+          "Could not connect to the backend. Please check the Render service, " +
+            "backend CORS settings, and your internet connection."
         );
       } else {
         setResult(`Error:\n\n${readableError(error)}`);
@@ -130,29 +112,26 @@ function App() {
     }
   }
 
-  // Explain code using Ollama
-  async function explainCode() {
-    await requestAnalysis(
+  function explainCode() {
+    return requestAnalysis(
       "/explain",
       "Thinking... AI is explaining your code.",
       "Code explanation failed."
     );
   }
 
-  // Find possible bugs using Ollama
-  async function findBugs() {
-    await requestAnalysis(
+  function findBugs() {
+    return requestAnalysis(
       "/find-bugs",
       "Checking your code for possible bugs...",
       "Bug analysis failed."
     );
   }
 
-  // Analyze actual code complexity using Ollama
-  async function analyzeComplexity() {
-    await requestAnalysis(
+  function analyzeComplexity() {
+    return requestAnalysis(
       "/complexity",
-      "Analyzing loops, recursion, time complexity and auxiliary space...",
+      "Analyzing time complexity and auxiliary space...",
       "Complexity analysis failed."
     );
   }
@@ -224,7 +203,7 @@ int main() {
 
         <div className="status">
           <span className="status-dot" />
-          Local workspace
+          AI workspace
         </div>
       </header>
 
@@ -278,10 +257,7 @@ int main() {
               Find Bugs
             </button>
 
-            <button
-              onClick={analyzeComplexity}
-              disabled={isLoading}
-            >
+            <button onClick={analyzeComplexity} disabled={isLoading}>
               Analyze Complexity
             </button>
           </div>
@@ -301,9 +277,7 @@ int main() {
         </div>
       </section>
 
-      <footer>
-        Built for curious minds. Powered by local AI.
-      </footer>
+      <footer>Built for curious minds. Powered by AI.</footer>
     </main>
   );
 }
