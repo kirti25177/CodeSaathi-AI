@@ -67,7 +67,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000${endpoint}`,
+  `https://codesaathi-ai-n6c2.onrender.com${endpoint}`,
         {
           method: "POST",
           headers: {
