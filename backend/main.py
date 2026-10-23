@@ -1,8 +1,10 @@
-from pathlib import Path
+
+import os
 import subprocess
 import tempfile
+from pathlib import Path
 
-import ollama
+import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -55,15 +57,12 @@ and dry runs where useful.
 Do not invent behavior. Do not claim that you compiled or
 executed the code.
 """
-
         user_prompt = (
             f"Programming language: {language}\n\n"
             f"Explain this code step by step:\n\n{code}"
         )
-
         num_predict = 1024
 
-    
     elif task == "complexity":
         system_prompt = """
 You are CodeSaathi AI, a precise DSA complexity analyzer.
@@ -75,25 +74,18 @@ RULES:
 2. Input arrays, vectors and strings are NOT auxiliary space.
    Do not count input storage as extra memory.
 3. Count only additional memory allocated by the function.
-4. For binary search on an input vector:
-   time is O(log n), auxiliary space is O(1)
-   when implemented iteratively with constant extra variables.
+4. Iterative binary search on an input vector takes O(log n)
+   time and O(1) auxiliary space.
 5. For nested loops, multiply iteration counts.
-   If the inner variable doubles each iteration, its count is O(log n).
-   Therefore n outer iterations and log n inner iterations give
-   O(n log n), not O(n^2).
-6. For recursion, write the COMPLETE recurrence, including
-   non-recursive work. Example:
-   T(n) = 2T(n/2) + O(1) gives O(n) time.
+   If an inner variable doubles each iteration, its count is O(log n).
+6. For recursion, write the complete recurrence, including
+   non-recursive work.
 7. Analyze recursion stack depth separately.
-   If n is halved in each call, depth is O(log n).
-   If each stack frame uses O(1) extra space, stack space is O(log n).
 8. Attribute each allocated array to the function that creates it.
-   A vector temp(n) requires O(n) auxiliary space.
 9. Do not confuse the number of recursive calls with recursion depth.
 10. Give each function's time and auxiliary space.
 11. Give an overall complexity for the complete program.
-12. State assumptions clearly and check the final answer for consistency.
+12. State assumptions clearly and check consistency.
 
 Return a concise answer with these headings:
 - Function-wise Time Complexity
@@ -103,7 +95,6 @@ Return a concise answer with these headings:
 
 Do not claim that you compiled or executed the code.
 """
-
         user_prompt = (
             f"Language: {language}\n\n"
             "Analyze the following code. Include every function, "
@@ -111,9 +102,7 @@ Do not claim that you compiled or executed the code.
             "recursion stack space, and overall TC/SC.\n\n"
             f"CODE:\n{code}"
         )
-
         num_predict = 650
-
 
     elif task == "find-bugs":
         system_prompt = """
@@ -137,14 +126,12 @@ and suggest a correction.
 Do not invent bugs. If the code appears correct, say so.
 Do not claim that you compiled or executed the code.
 """
-
         user_prompt = (
             f"Programming language: {language}\n\n"
             "Review every function in the following code. Identify "
             "possible issues, explain them, and suggest corrections.\n\n"
             f"CODE:\n{code}"
         )
-
         num_predict = 400
 
     else:
@@ -153,39 +140,97 @@ Do not claim that you compiled or executed the code.
             detail=f"Unsupported AI task: {task}",
         )
 
-    print(f"Calling Ollama for task: {task}", flush=True)
+    # Read the secret from Render environment variables
+    api_key = os.environ.get("OLLAMA_API_KEY")
 
-    try:
-        response = ollama.chat(
-            model="qwen2.5:3b",
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                },
-            ],
-            options={"num_predict": num_predict},
+    if not api_key:
+        print("OLLAMA_API_KEY is not configured.", flush=True)
+        raise HTTPException(
+            status_code=500,
+            detail="AI service is not configured. Please try again later.",
         )
 
-        explanation = response["message"]["content"]
-        print(f"Ollama response received for {task}!", flush=True)
+    print(f"Calling Ollama Cloud for task: {task}", flush=True)
+
+    try:
+        response = requests.post(
+            "https://ollama.com/api/chat",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "qwen2.5:3b",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": system_prompt,
+                    },
+                    {
+                        "role": "user",
+                        "content": user_prompt,
+                    },
+                ],
+                "stream": False,
+                "options": {
+                    "num_predict": num_predict,
+                },
+            },
+            timeout=120,
+        )
+
+        response.raise_for_status()
+        result = response.json()
+        explanation = result["message"]["content"]
+
+        print(
+            f"Ollama Cloud response received for {task}!",
+            flush=True,
+        )
 
         return explanation
 
-    except Exception as error:
-        print(f"Ollama error during {task}: {error}", flush=True)
+    except requests.exceptions.Timeout:
+        print(f"Ollama Cloud timed out during {task}.", flush=True)
+        raise HTTPException(
+            status_code=504,
+            detail="The AI service took too long to respond. Please try again.",
+        )
+
+    except requests.exceptions.HTTPError as error:
+        status_code = (
+            error.response.status_code
+            if error.response is not None
+            else 502
+        )
+
+        print(
+            f"Ollama Cloud HTTP error during {task}: {status_code}",
+            flush=True,
+        )
+
+        if status_code in (401, 403):
+            detail = "AI authentication failed. Check the API key configuration."
+        elif status_code == 429:
+            detail = "AI service rate limit or quota reached. Please try again later."
+        elif status_code == 404:
+            detail = "The requested AI model was not found. Check the cloud model name."
+        else:
+            detail = "The AI provider returned an error. Please try again later."
 
         raise HTTPException(
             status_code=502,
-            detail=(
-                "Could not get a response from Ollama. "
-                "Check that Ollama is running and qwen2.5:3b "
-                "is installed."
-            ),
+            detail=detail,
+        )
+
+    except (requests.exceptions.RequestException, ValueError, KeyError) as error:
+        print(
+            f"Ollama Cloud error during {task}: {type(error).__name__}",
+            flush=True,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="Could not get a valid response from the AI service.",
         )
 
 
@@ -266,7 +311,7 @@ def compile_code(data: CodeRequest):
         ) as temp_dir:
             folder = Path(temp_dir)
             source_file = folder / "main.cpp"
-            executable = folder / "main.exe"
+            executable = folder / "main"
 
             source_file.write_text(code, encoding="utf-8")
 
@@ -330,7 +375,8 @@ def compile_code(data: CodeRequest):
         )
 
     except OSError as error:
+        print(f"Compiler OS error: {error}", flush=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Could not start the compiler: {error}",
+            detail="Could not start the compiler.",
         )
