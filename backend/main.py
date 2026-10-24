@@ -160,7 +160,7 @@ Do not claim that you compiled or executed the code.
                 "Content-Type": "application/json",
             },
             json={
-                "model": "qwen2.5:3b",
+                "model": "deepseek-v4.1-flash",
                 "messages": [
                     {
                         "role": "system",
