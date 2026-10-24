@@ -197,6 +197,7 @@ Do not claim that you compiled or executed the code.
             detail="The AI service took too long to respond. Please try again.",
         )
 
+    
     except requests.exceptions.HTTPError as error:
         status_code = (
             error.response.status_code
@@ -208,6 +209,27 @@ Do not claim that you compiled or executed the code.
             f"Ollama Cloud HTTP error during {task}: {status_code}",
             flush=True,
         )
+
+        if error.response is not None:
+            print(
+                f"Provider response: {error.response.text[:1000]}",
+                flush=True,
+            )
+
+        if status_code in (401, 403):
+            detail = "AI authentication failed. Check the API key configuration."
+        elif status_code == 429:
+            detail = "AI service rate limit or quota reached. Please try again later."
+        elif status_code == 404:
+            detail = "The requested AI model was not found. Check the cloud model name."
+        else:
+            detail = "The AI provider returned an error. Please try again later."
+
+        raise HTTPException(
+            status_code=502,
+            detail=detail,
+        )
+
 
         if status_code in (401, 403):
             detail = "AI authentication failed. Check the API key configuration."
