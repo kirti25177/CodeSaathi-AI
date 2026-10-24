@@ -160,7 +160,7 @@ Do not claim that you compiled or executed the code.
                 "Content-Type": "application/json",
             },
             json={
-                "model": "deepseek-v4.1-flash",
+                "model": "gemma4:cloud",
                 "messages": [
                     {
                         "role": "system",
